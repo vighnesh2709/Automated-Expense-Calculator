@@ -12,8 +12,10 @@
   "devDependencies": {
     "@types/node": "^22.5.4"
   },
+  "type": "module",
   "dependencies": {
-    "@google-cloud/local-auth": "^2.1.0",
-    "googleapis": "^105.0.0"
+    "@google-cloud/local-auth": "^2.1.1",
+    "googleapis": "^105.0.0",
+    "mysql2": "^3.11.1"
   }
 }
