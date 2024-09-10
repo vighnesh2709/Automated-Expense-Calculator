@@ -3,6 +3,7 @@ import path from 'path';
 import process from 'process';
 import { authenticate } from '@google-cloud/local-auth';
 import { google } from 'googleapis';
+import {insertData} from '../dist/database/database.js'
 
 
 // If modifying these scopes, delete token.json.
@@ -21,7 +22,6 @@ const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 async function loadSavedCredentialsIfExist() {
   try {
     const content = await fs.readFile(TOKEN_PATH, { encoding: 'utf8' });
-    console.log("TOKEN " + content)
     const credentials = JSON.parse(content);
     return google.auth.fromJSON(credentials);
   } catch (err) {
@@ -38,7 +38,6 @@ async function loadSavedCredentialsIfExist() {
 
 async function saveCredentials(client) {
   const content = await fs.readFile(CREDENTIALS_PATH, { encoding: 'utf8' });
-  console.log("CREDENTIALS " + content);
   const keys = JSON.parse(content);
   const key = keys.installed || keys.web;
   const payload = JSON.stringify({
@@ -66,7 +65,6 @@ async function authorize() {
   if (client.credentials) {
     await saveCredentials(client);
   }
-  console.log("type of client " + typeof (client));
   return client;
 }
 
@@ -76,6 +74,11 @@ async function authorize() {
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
  */
 async function listEmails(auth) {
+  let bankAccount=""
+  let transactionDateFinal=""
+  let transactionAmount=""
+  let transactionToDetail=""
+  let debitedOrCredited=""
   const gmail = google.gmail({ version: 'v1', auth });
 
   // List messages
@@ -86,30 +89,25 @@ async function listEmails(auth) {
     q: 'from: "alerts@hdfcbank.net"'
   });
   const messages = res.data.messages;
-  console.log("type of message is " + typeof (messages))
   for (let i = 0; i < messages.length; i++) {
     const messageDetails = await gmail.users.messages.get({
       userId: 'me',
       id: messages[i].id,
       format: 'FULL'
     })
-    //console.log(messageDetails);
-    // console.log(messageDetails);
-    // console.log("\n");
     
     let snippet = messageDetails.data.snippet;
     
     // This part of the code is to get the bank account details from the snippet
     try {
       const regexBankAccount = /\*\*\d\d\d\d/g
-      let bankAccount = snippet.match(regexBankAccount);
-      console.log(bankAccount[0]);
-
+      let bankAccountRegex = snippet.match(regexBankAccount);
+      bankAccount=bankAccountRegex[0]
     } catch {
       try{
       let regexBankAccount=/\X\X\d\d\d\d/g
-      let bankAccount=snippet.match(regexBankAccount);
-      console.log(bankAccount[0])}
+      let bankAccountRegex = snippet.match(regexBankAccount);
+      bankAccount=bankAccountRegex[0]}
       catch(error){
         console.log(error);
       }
@@ -119,7 +117,8 @@ async function listEmails(auth) {
     try{
       const regexTransactionDate=/\d\d\-\d\d\-\d\d/g
       let transactionDate=snippet.match(regexTransactionDate);
-      console.log(transactionDate[0]);
+      let transactionDateFinal=Date.parse(transactionDate[0]);
+      console.log(transactionDateFinal);
     }catch(error){
       console.log(error);
     }
@@ -128,10 +127,9 @@ async function listEmails(auth) {
     // This part of the code is to get the transaction amount from the snippet
     try{
       const regexTransactionAmount=/\d+\.\d+/g
-      let transactionAmount=snippet.match(regexTransactionAmount);
-      transactionAmount=(parseFloat(transactionAmount[0]));
+      let transactionAmountRegex=snippet.match(regexTransactionAmount);
+      transactionAmount=(parseFloat(transactionAmountRegex[0])+.00);
       console.log(transactionAmount)
-      console.log(typeof(transactionAmount));
     }catch(error){
       console.log(error);
     }
@@ -139,8 +137,8 @@ async function listEmails(auth) {
     // This part of the code is to get the transaction to details from the snippet
     try{
       const regexTransactionToDetail=/\w+([\.-]?\w+)*@\w+([\.-]?\w+)/g
-      let transactionToDetail=snippet.match(regexTransactionToDetail);
-      console.log(transactionToDetail[0]);
+      let transactionToDetailRegex=snippet.match(regexTransactionToDetail);
+      transactionToDetail=transactionToDetailRegex[0];
     }catch(error){
        console.log("this error is for transaction to detail");
     }
@@ -148,20 +146,19 @@ async function listEmails(auth) {
     //this part of the code is to get check if amount was debited or credited from the snippet
     try{
       const regexDebitedOrCredited=/debited/g
-      let debitedOrCredited=snippet.match(regexDebitedOrCredited);
-      console.log(debitedOrCredited[0]);
+      let debitedOrCreditedRegex=snippet.match(regexDebitedOrCredited);
+      debitedOrCredited=debitedOrCreditedRegex[0]
     }catch{
       try{
         const regexDebitedOrCredited=/credited/g
-        let debitedOrCredited=snippet.match(regexDebitedOrCredited);
-        console.log(debitedOrCredited[0]);
+        let debitedOrCreditedRegex=snippet.match(regexDebitedOrCredited);
+        debitedOrCredited=debitedOrCreditedRegex[0]
       }catch(error){
         console.log(error);
       }
     }
-
-
-
+    console.log(bankAccount[0])
+    insertData(bankAccount, transactionDateFinal, transactionAmount, transactionToDetail, debitedOrCredited);
   }
   const messageDetails = await gmail.users.messages.get({
     userId: 'me',
@@ -169,23 +166,11 @@ async function listEmails(auth) {
     format: 'FULL'
   });
 
-  // Retrieve details for each message
-  // for (const message of messages) {
-  //   const messageDetails = await gmail.users.messages.get({
-  //     userId: 'me',
-  //     id: message.id,
-  //     format: 'FULL' // Get the full message content
-  //   });
-  //   console.log(messageDetails);
-  //   // Extract the desired content
-  // }
 }
-// /\*\*\d\d\d\d/g-> this is for bank account details
-// /\d\d\-\d\d\-\d\d/g -> this is for the date of the transaction
-// /Rs\.\d+\.\d+/g -> this is to get the amount
-// /\w+\.\@\w+/g -> this is to or from who the payment was made
-// /debited/g ->debited
-// /credited/g ->credited
+
+/**
+ * now the error in this code is the format of the date thats being pushed into the database, its not of the correct format otherwise we all good.
+ */
 
 
 

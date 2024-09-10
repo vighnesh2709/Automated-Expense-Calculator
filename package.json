@@ -10,11 +10,14 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/find-config": "^1.0.4",
     "@types/node": "^22.5.4"
   },
   "type": "module",
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.1",
+    "dotenv": "^16.4.5",
+    "find-config": "^1.0.0",
     "googleapis": "^105.0.0",
     "mysql2": "^3.11.1"
   }
