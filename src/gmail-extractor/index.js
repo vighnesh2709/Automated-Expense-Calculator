@@ -112,13 +112,18 @@ async function listEmails(auth) {
         console.log(error);
       }
     }
-
+   
+    
+    
     // This part of the code is to get the date of transaction from the snippet
     try{
       const regexTransactionDate=/\d\d\-\d\d\-\d\d/g
       let transactionDate=snippet.match(regexTransactionDate);
-      let transactionDateFinal=Date.parse(transactionDate[0]);
+      transactionDateFinal=parseDate(transactionDate[0]);
       console.log(transactionDateFinal);
+      // transactionDateFinal=new Date(transactionDate[0]);
+      // console.log(transactionDateFinal,transactionDate[0]);
+
     }catch(error){
       console.log(error);
     }
@@ -129,7 +134,7 @@ async function listEmails(auth) {
       const regexTransactionAmount=/\d+\.\d+/g
       let transactionAmountRegex=snippet.match(regexTransactionAmount);
       transactionAmount=(parseFloat(transactionAmountRegex[0])+.00);
-      console.log(transactionAmount)
+      //console.log(transactionAmount)
     }catch(error){
       console.log(error);
     }
@@ -157,7 +162,7 @@ async function listEmails(auth) {
         console.log(error);
       }
     }
-    console.log(bankAccount[0])
+    console.log(transactionDateFinal+"These are the dates")
     insertData(bankAccount, transactionDateFinal, transactionAmount, transactionToDetail, debitedOrCredited);
   }
   const messageDetails = await gmail.users.messages.get({
@@ -175,3 +180,10 @@ async function listEmails(auth) {
 
 
 authorize().then(listEmails).catch(console.error);
+
+
+function parseDate(dateString) {
+  const [day, month, year] = dateString.split('-');
+  const yearWithCentury = `20${year}`; // Assuming the year is in the 21st century
+  return new Date(`${yearWithCentury}-${month}-${day}`);
+}
