@@ -3,7 +3,8 @@ import path from 'path';
 import process from 'process';
 import { authenticate } from '@google-cloud/local-auth';
 import { google } from 'googleapis';
-import {insertData} from '../dist/database/database.js'
+import { insertData } from '../dist/database/database.js'
+import { getBankAccount,getTransactionDate,getTransactionAmount,getTransactionToDetails,getDebitedOrCredited} from './text-extractior.js';
 
 
 // If modifying these scopes, delete token.json.
@@ -74,11 +75,11 @@ async function authorize() {
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
  */
 async function listEmails(auth) {
-  let bankAccount=""
-  let transactionDateFinal=""
-  let transactionAmount=""
-  let transactionToDetail=""
-  let debitedOrCredited=""
+  let bankAccount = ""
+  let transactionDateFinal = ""
+  let transactionAmount = ""
+  let transactionToDetail = ""
+  let debitedOrCredited = ""
   const gmail = google.gmail({ version: 'v1', auth });
 
   // List messages
@@ -95,74 +96,30 @@ async function listEmails(auth) {
       id: messages[i].id,
       format: 'FULL'
     })
-    
+
     let snippet = messageDetails.data.snippet;
-    
+
     // This part of the code is to get the bank account details from the snippet
-    try {
-      const regexBankAccount = /\*\*\d\d\d\d/g
-      let bankAccountRegex = snippet.match(regexBankAccount);
-      bankAccount=bankAccountRegex[0]
-    } catch {
-      try{
-      let regexBankAccount=/\X\X\d\d\d\d/g
-      let bankAccountRegex = snippet.match(regexBankAccount);
-      bankAccount=bankAccountRegex[0]}
-      catch(error){
-        console.log(error);
-      }
-    }
-   
-    
-    
+
+    bankAccount = getBankAccount(snippet);
+    // console.log(bankAccount);
+
     // This part of the code is to get the date of transaction from the snippet
-    try{
-      const regexTransactionDate=/\d\d\-\d\d\-\d\d/g
-      let transactionDate=snippet.match(regexTransactionDate);
-      transactionDateFinal=parseDate(transactionDate[0]);
-      console.log(transactionDateFinal);
-      // transactionDateFinal=new Date(transactionDate[0]);
-      // console.log(transactionDateFinal,transactionDate[0]);
-
-    }catch(error){
-      console.log(error);
-    }
-
+    transactionDateFinal=getTransactionDate(snippet);
+    // console.log(transactionDateFinal);
 
     // This part of the code is to get the transaction amount from the snippet
-    try{
-      const regexTransactionAmount=/\d+\.\d+/g
-      let transactionAmountRegex=snippet.match(regexTransactionAmount);
-      transactionAmount=(parseFloat(transactionAmountRegex[0])+.00);
-      //console.log(transactionAmount)
-    }catch(error){
-      console.log(error);
-    }
+    transactionAmount=getTransactionAmount(snippet);
+    // console.log(transactionAmount);
 
     // This part of the code is to get the transaction to details from the snippet
-    try{
-      const regexTransactionToDetail=/\w+([\.-]?\w+)*@\w+([\.-]?\w+)/g
-      let transactionToDetailRegex=snippet.match(regexTransactionToDetail);
-      transactionToDetail=transactionToDetailRegex[0];
-    }catch(error){
-       console.log("this error is for transaction to detail");
-    }
+    transactionToDetail=getTransactionToDetails(snippet);
+    // console.log(transactionToDetail);
 
     //this part of the code is to get check if amount was debited or credited from the snippet
-    try{
-      const regexDebitedOrCredited=/debited/g
-      let debitedOrCreditedRegex=snippet.match(regexDebitedOrCredited);
-      debitedOrCredited=debitedOrCreditedRegex[0]
-    }catch{
-      try{
-        const regexDebitedOrCredited=/credited/g
-        let debitedOrCreditedRegex=snippet.match(regexDebitedOrCredited);
-        debitedOrCredited=debitedOrCreditedRegex[0]
-      }catch(error){
-        console.log(error);
-      }
-    }
-    console.log(transactionDateFinal+"These are the dates")
+    debitedOrCredited=getDebitedOrCredited(snippet);
+    // console.log(debitedOrCredited);
+   
     insertData(bankAccount, transactionDateFinal, transactionAmount, transactionToDetail, debitedOrCredited);
   }
   const messageDetails = await gmail.users.messages.get({
@@ -173,17 +130,10 @@ async function listEmails(auth) {
 
 }
 
-/**
- * now the error in this code is the format of the date thats being pushed into the database, its not of the correct format otherwise we all good.
- */
-
-
-
 authorize().then(listEmails).catch(console.error);
 
 
-function parseDate(dateString) {
-  const [day, month, year] = dateString.split('-');
-  const yearWithCentury = `20${year}`; // Assuming the year is in the 21st century
-  return new Date(`${yearWithCentury}-${month}-${day}`);
-}
+
+
+
+
