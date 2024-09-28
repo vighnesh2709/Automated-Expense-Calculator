@@ -3,7 +3,7 @@ import path from 'path';
 import process from 'process';
 import { authenticate } from '@google-cloud/local-auth';
 import { google } from 'googleapis';
-import { insertData } from '../dist/database/database.js'
+import { insertData } from '../../dist/database/database.js'
 import { getBankAccount,getTransactionDate,getTransactionAmount,getTransactionToDetails,getDebitedOrCredited} from './text-extractior.js';
 
 
@@ -106,7 +106,7 @@ async function listEmails(auth) {
 
     // This part of the code is to get the date of transaction from the snippet
     transactionDateFinal=getTransactionDate(snippet);
-    // console.log(transactionDateFinal);
+    console.log(transactionDateFinal);
 
     // This part of the code is to get the transaction amount from the snippet
     transactionAmount=getTransactionAmount(snippet);
@@ -120,7 +120,11 @@ async function listEmails(auth) {
     debitedOrCredited=getDebitedOrCredited(snippet);
     // console.log(debitedOrCredited);
    
+    if(debitedOrCredited=="debited"){
+      transactionAmount=transactionAmount*-1;
+    }
     insertData(bankAccount, transactionDateFinal, transactionAmount, transactionToDetail, debitedOrCredited);
+    
   }
   const messageDetails = await gmail.users.messages.get({
     userId: 'me',

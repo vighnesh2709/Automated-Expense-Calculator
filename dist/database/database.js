@@ -1,6 +1,7 @@
 import mysql from 'mysql2';
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
+import fs from 'fs';
 dotenv.config({ path: findConfig('.env') });
 const pool = mysql.createPool({
     host: process.env.host,
@@ -11,14 +12,37 @@ const pool = mysql.createPool({
 // const reply=await pool.query(`select * from notes where id= ?`,[1])
 export async function insertData(bankAccountNumber, transactionDate, transactionAmount, transactionTo, debitedCredited) {
     console.log(bankAccountNumber, transactionAmount, transactionDate, transactionTo, debitedCredited);
-    const reply = await pool.query(`
-      INSERT INTO transactions 
-      (bank_account_number, transaction_date, transaction_amount, debited_credited, transaction_to) 
-      VALUES (?, ?, ?, ?, ?)
-    `, [bankAccountNumber, transactionDate, transactionAmount, debitedCredited, transactionTo]);
-    //const checking = await pool.query(`SELECT * FROM transactions`);
-    //console.log(reply);
-    //console.log(checking[0]);
+    const query = `
+        INSERT INTO transactions 
+        (bank_account_number, transaction_date, transaction_amount, debited_credited, transaction_to) 
+        VALUES (?, ?, ?, ?, ?)
+      `;
+    const values = [
+        bankAccountNumber,
+        transactionDate,
+        transactionAmount,
+        debitedCredited,
+        transactionTo
+    ];
+    try {
+        const reply = await pool.query(query, values);
+        console.log(reply);
+    }
+    catch (error) {
+        console.error("Error executing query:", error);
+    }
+}
+export async function getDataAccountNum(bank_account_number) {
+    const query = `SELECT * FROM transactions where bank_account_number=?`;
+    const values = [bank_account_number];
+    try {
+        const reply = await pool.query(query, values);
+        console.log(reply);
+        fs.writeFileSync('text.txt', JSON.stringify(reply[0]));
+    }
+    catch (error) {
+        console.log(error);
+    }
 }
 /*
     what are the functions we need the database to follow for now,
