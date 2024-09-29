@@ -51,7 +51,8 @@ export function getTransactionAmount(snippet){
 
 export function getTransactionToDetails(snippet){
     try {
-        const regexTransactionToDetail = /\w+([\.-]?\w+)*@\w+([\.-]?\w+)/g
+        //const regexTransactionToDetail = /\w+([\.-]?\w+)*@\w+([\.-]?\w+)/g
+        const regexTransactionToDetail= /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\b/g;
         let transactionToDetailRegex = snippet.match(regexTransactionToDetail);
         let transactionToDetail = transactionToDetailRegex[0];
         return transactionToDetail;

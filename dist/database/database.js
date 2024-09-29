@@ -32,26 +32,60 @@ export async function insertData(bankAccountNumber, transactionDate, transaction
         console.error("Error executing query:", error);
     }
 }
-export async function getDataAccountNum(bank_account_number) {
-    const query = `SELECT * FROM transactions where bank_account_number=?`;
+export async function bankAccountNumbers() {
+    const query = 'select distinct(bank_account_number) from transactionsl ;';
+    try {
+        const reply = await pool.query(query);
+        console.log(reply);
+    }
+    catch (error) {
+        console.log(error);
+    }
+}
+//pieChartData("**1071");
+export async function pieChartData(bank_account_number) {
+    const query = ` select transaction_to, SUM(transaction_amount),bank_account_number from transactions where bank_account_number=? group by transaction_to;`;
     const values = [bank_account_number];
     try {
         const reply = await pool.query(query, values);
-        console.log(reply);
         fs.writeFileSync('text.txt', JSON.stringify(reply[0]));
+        return (reply[0]);
+    }
+    catch (error) {
+        console.log(error);
+    }
+}
+export async function lineGraphData(bank_account_number) {
+    const query = `select transaction_date,SUM(transaction_amount) from transactions where bank_account_number=? group by transaction_date order by transaction_date ASC;`;
+    const value = [bank_account_number];
+    console.log("printing");
+    try {
+        console.log("printing inside");
+        const reply = await pool.query(query, value);
+        fs.writeFileSync('text.txt', JSON.stringify(reply[0]));
+        return reply[0];
+    }
+    catch (error) {
+        console.log(error);
+    }
+}
+export async function totalExpenditure(bank_account_number) {
+    const query = `select SUM(transaction_amount) from transactions where bank_account_number=?;`;
+    const value = [bank_account_number];
+    try {
+        const reply = await pool.query(query, value);
+        fs.writeFileSync('text.txt', JSON.stringify(reply[0]));
+        return reply[0];
     }
     catch (error) {
         console.log(error);
     }
 }
 /*
-    what are the functions we need the database to follow for now,
-    1) insert the data into the databse (datafrom the email gets put into this).
-    mysql> create table transactions(
-    -> id integer PRIMARY KEY AUTO_INCREMENT,
-    -> bank_account_number varchar(10),
-    -> transaction_date timestamp,
-    -> transaction_amount numeric,
-    -> debited_credited varchar(8));
+    now what sort of charts do we want?
+    1. pie char so for tha we need to order by distinct people we have paid and gotten the moeny from
+    2. line graph to show each month how the money has been spent
+    3. total expenditure so thats just aggregate
+    4. figuure how to link bankaccount to this so that every time money comes we get a mail
 
 */ 
