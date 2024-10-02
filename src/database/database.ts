@@ -59,7 +59,7 @@ export async function pieChartData(
  bank_account_number:String
 ){
 
-    const query=` select transaction_to, SUM(transaction_amount),bank_account_number from transactions where bank_account_number=? group by transaction_to;`
+    const query=` select transaction_to, SUM(transaction_amount) as total from transactions where bank_account_number=? group by transaction_to;`
     const values=[bank_account_number];
 
     try {
@@ -96,6 +96,17 @@ export async function totalExpenditure(
     try{
         const reply=await pool.query(query,value);
         fs.writeFileSync('text.txt',JSON.stringify(reply[0]));
+        return reply[0];
+    }catch(error){
+        console.log(error);
+    }
+}
+export async function expenditureMonthly(bank_account_number:String){
+    const query=`select date_format(transaction_date,'%y-%m') as month, SUM(transaction_amount) as total from transactions where bank_account_number=? group by month order by month;`
+    const value=[bank_account_number]
+
+    try{
+        const reply=await pool.query(query,value);
         return reply[0];
     }catch(error){
         console.log(error);

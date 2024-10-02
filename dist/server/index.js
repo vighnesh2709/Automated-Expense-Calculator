@@ -1,7 +1,9 @@
 import * as database from '../database/database.js';
 import express from 'express';
+import cors from 'cors';
 const app = express();
 app.use(express.json());
+app.use(cors());
 console.log("running.....");
 app.get("/totalExpenditure", async (req, res) => {
     let bank_account_number = req.body.bank_account_number;
@@ -12,7 +14,7 @@ app.get("/totalExpenditure", async (req, res) => {
     });
 });
 app.get("/pieChartData", async (req, res) => {
-    let bank_account_number = req.body.bank_account_number;
+    let bank_account_number = req.query.bank_account_number;
     let ans = await database.pieChartData(bank_account_number);
     console.log(ans);
     res.json({
@@ -27,4 +29,13 @@ app.get("/linegraphData", async (req, res) => {
         ans
     });
 });
-app.listen(3000);
+app.get("/monthlyExpenditureData", async (req, res) => {
+    let bank_account_number = req.query.bank_account_number;
+    console.log(bank_account_number);
+    let ans = await database.expenditureMonthly(bank_account_number);
+    console.log(ans);
+    res.json({
+        ans
+    });
+});
+app.listen(3003);

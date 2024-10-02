@@ -120,7 +120,7 @@ async function listEmails(auth) {
     debitedOrCredited=getDebitedOrCredited(snippet);
     // console.log(debitedOrCredited);
    
-    if(debitedOrCredited=="debited"){
+    if(debitedOrCredited=="credited"){
       transactionAmount=transactionAmount*-1;
     }
     insertData(bankAccount, transactionDateFinal, transactionAmount, transactionToDetail, debitedOrCredited);
